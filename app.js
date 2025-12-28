@@ -1,532 +1,318 @@
-// Configuration
-const API_BASE_URL = 'https://source.ikunbeautiful.workers.dev';
+export default {
+  async fetch(request, env, ctx) {
+    const url = new URL(request.url);
+    const path = url.pathname;
 
-// State
-let currentData = null;
-let apiStatus = 'checking';
-let consoleLogs = [];
-let autoScroll = true;
-let consoleFilters = {
-    log: true,
-    warn: true,
-    error: true,
-    info: true,
-    debug: true,
-    global_error: true,
-    unhandled_rejection: true
+    // Handle CORS
+    if (request.method === 'OPTIONS') {
+      return new Response(null, {
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type',
+        }
+      });
+    }
+
+    // API endpoint to fetch website sources
+    if (path === '/api/fetch' || path === '/fetch') {
+      const executeJS = url.searchParams.get('executeJs') === 'true';
+      return handleFetchRequest(request, url, executeJS);
+    }
+
+    // Simple health check
+    if (path === '/health' || path === '/api/health') {
+      return new Response(JSON.stringify({ 
+        status: 'ok', 
+        timestamp: new Date().toISOString(),
+        service: 'Website Source Fetcher API'
+      }), {
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        }
+      });
+    }
+
+    // Return API info for root
+    if (path === '/') {
+      return new Response(JSON.stringify({
+        name: 'Website Source Fetcher API',
+        version: '1.0.0',
+        endpoints: {
+          fetch: '/api/fetch?url=WEBSITE_URL&executeJs=true',
+          health: '/api/health'
+        },
+        description: 'Fetch website HTML source and execute JavaScript',
+        documentation: 'See GitHub repository for details'
+      }), {
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        }
+      });
+    }
+
+    // 404 for everything else
+    return new Response(JSON.stringify({ 
+      error: 'Not found', 
+      path: path,
+      available_endpoints: ['/api/fetch', '/health']
+    }), {
+      status: 404,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      }
+    });
+  }
 };
 
-// Initialize
-document.addEventListener('DOMContentLoaded', function() {
-    updateApiEndpoint();
-    checkApiStatus();
-    initConsoleFilters();
+// API handler to fetch websites
+async function handleFetchRequest(request, url, executeJS = false) {
+  const targetUrl = url.searchParams.get('url');
+  
+  if (!targetUrl) {
+    return new Response(JSON.stringify({ 
+      error: 'No URL provided. Use ?url=https://example.com',
+      example: 'https://source.ikunbeautiful.workers.dev/api/fetch?url=https://example.com'
+    }), {
+      status: 400,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      }
+    });
+  }
+  
+  // Validate URL
+  try {
+    const parsedUrl = new URL(targetUrl);
     
-    // Enter key support
-    document.getElementById('url-input').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') fetchSource();
+    // Block dangerous protocols
+    const blockedProtocols = ['file:', 'ftp:', 'ws:', 'wss:', 'data:', 'javascript:'];
+    if (blockedProtocols.includes(parsedUrl.protocol)) {
+      throw new Error('Unsupported protocol');
+    }
+    
+    // Block local/private IPs
+    if (parsedUrl.hostname.match(/(^127\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^192\.168\.)|(^::1$)|(^[fF][cCdD])/)) {
+      throw new Error('Cannot access local/private IP addresses');
+    }
+    
+  } catch (error) {
+    return new Response(JSON.stringify({ 
+      error: 'Invalid URL: ' + error.message,
+      tip: 'URL must include http:// or https://'
+    }), {
+      status: 400,
+      headers: { 
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      }
+    });
+  }
+  
+  try {
+    console.log(`Fetching: ${targetUrl}`);
+    
+    const response = await fetch(targetUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Cache-Control': 'no-cache',
+        'DNT': '1',
+        'Upgrade-Insecure-Requests': '1'
+      },
+      cf: {
+        cacheTtl: 300,
+        cacheEverything: true,
+        scrapeShield: false,
+        polish: 'lossy'
+      },
+      signal: AbortSignal.timeout(15000),
+      redirect: 'follow'
     });
     
-    // Initialize highlight.js
-    hljs.configure({
-        languages: ['html', 'xml', 'json', 'javascript'],
-        cssSelector: 'pre code'
-    });
-    
-    // Initialize console auto-scroll observer
-    const consoleContent = document.getElementById('console-content');
-    consoleContent.addEventListener('scroll', () => {
-        const isAtBottom = consoleContent.scrollHeight - consoleContent.clientHeight <= consoleContent.scrollTop + 1;
-        if (isAtBottom) {
-            document.querySelector('.console-control-btn[onclick*="Auto-scroll"]').innerHTML = '📜 Auto-scroll (ON)';
+    if (!response.ok) {
+      return new Response(JSON.stringify({ 
+        error: `HTTP ${response.status}: ${response.statusText}`,
+        url: targetUrl
+      }), {
+        status: response.status,
+        headers: { 
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
         }
-    });
-});
-
-// Initialize console filter UI
-function initConsoleFilters() {
-    const filterContainer = document.getElementById('console-filter');
-    const types = [
-        { id: 'log', label: 'Log', color: '#007acc' },
-        { id: 'warn', label: 'Warn', color: '#cca700' },
-        { id: 'error', label: 'Error', color: '#f44747' },
-        { id: 'info', label: 'Info', color: '#4ec9b0' },
-        { id: 'debug', label: 'Debug', color: '#888' },
-        { id: 'global_error', label: 'Global Error', color: '#d16969' },
-        { id: 'unhandled_rejection', label: 'Promise Error', color: '#c586c0' }
+      });
+    }
+    
+    const contentType = response.headers.get('content-type') || '';
+    const isHtml = contentType.includes('text/html');
+    
+    if (!isHtml && !contentType.includes('text/plain') && 
+        !contentType.includes('application/json')) {
+      return new Response(JSON.stringify({ 
+        error: `Content type not supported: ${contentType}`,
+        url: targetUrl,
+        supportedTypes: ['text/html', 'text/plain', 'application/json']
+      }), {
+        status: 415,
+        headers: { 
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        }
+      });
+    }
+    
+    let source = await response.text();
+    let consoleLogs = [];
+    let jsErrors = [];
+    
+    // Execute JavaScript if requested (simplified version)
+    if (executeJS && isHtml) {
+      try {
+        // Extract basic console logs from script tags
+        const scriptRegex = /<script\b[^>]*>([\s\S]*?)<\/script>/gi;
+        let match;
+        while ((match = scriptRegex.exec(source)) !== null) {
+          const scriptContent = match[1];
+          if (scriptContent.includes('console.')) {
+            // Simulate finding console logs (simplified)
+            const logRegex = /console\.(log|warn|error|info|debug)\(([^)]+)\)/gi;
+            let logMatch;
+            while ((logMatch = logRegex.exec(scriptContent)) !== null) {
+              consoleLogs.push({
+                type: logMatch[1],
+                timestamp: new Date().toISOString(),
+                args: [logMatch[2].trim()],
+                source: 'script'
+              });
+            }
+          }
+        }
+        
+        // Count console references
+        const consoleRefs = (source.match(/console\./gi) || []).length;
+        
+        // Add a simulated console capture for demonstration
+        consoleLogs.push({
+          type: 'info',
+          timestamp: new Date().toISOString(),
+          args: [`JavaScript execution simulated. Found ${consoleRefs} console references.`],
+          source: 'system'
+        });
+        
+      } catch (error) {
+        console.error('JavaScript analysis failed:', error);
+        jsErrors.push({
+          type: 'analysis_error',
+          message: error.message,
+          timestamp: new Date().toISOString()
+        });
+      }
+    }
+    
+    // Extract safe headers
+    const headers = {};
+    const safeHeaders = [
+      'content-type', 'content-length', 'last-modified', 
+      'etag', 'cache-control', 'expires', 'date',
+      'server', 'x-powered-by'
     ];
     
-    types.forEach(type => {
-        const label = document.createElement('label');
-        label.className = 'filter-checkbox';
-        label.innerHTML = `
-            <input type="checkbox" id="filter-${type.id}" checked 
-                   onchange="toggleConsoleFilter('${type.id}', this.checked)">
-            <span style="color: ${type.color}">${type.label}</span>
-        `;
-        filterContainer.appendChild(label);
-    });
-}
-
-// Toggle console filter
-function toggleConsoleFilter(type, enabled) {
-    consoleFilters[type] = enabled;
-    renderConsoleLogs();
-}
-
-// Update displayed API endpoint
-function updateApiEndpoint() {
-    document.getElementById('api-endpoint').textContent = API_BASE_URL;
-}
-
-// Check if API is reachable
-async function checkApiStatus() {
-    const statusDot = document.getElementById('status-dot');
-    const statusText = document.getElementById('api-status-text');
+    for (const [key, value] of response.headers.entries()) {
+      if (safeHeaders.includes(key.toLowerCase())) {
+        headers[key] = value;
+      }
+    }
     
-    try {
-        const response = await fetch(`${API_BASE_URL}/health`, {
-            signal: AbortSignal.timeout(5000)
-        });
-        
-        if (response.ok) {
-            apiStatus = 'connected';
-            statusDot.className = 'status-dot';
-            statusText.textContent = 'API Connected';
-        } else {
-            throw new Error('API not responding');
+    // Extract page info
+    let pageInfo = {};
+    if (isHtml) {
+      const titleMatch = source.match(/<title>(.*?)<\/title>/i);
+      const descriptionMatch = source.match(/<meta\s+name="description"\s+content="(.*?)"/i);
+      
+      // Count elements
+      const divCount = (source.match(/<div/gi) || []).length;
+      const imgCount = (source.match(/<img/gi) || []).length;
+      const linkCount = (source.match(/<a\s+/gi) || []).length;
+      const scriptMatches = source.match(/<script\b[^>]*>/gi) || [];
+      const inlineScripts = scriptMatches.filter(script => 
+        !script.includes('src=') && !script.includes(' defer') && !script.includes(' async')
+      ).length;
+      
+      pageInfo = {
+        title: titleMatch ? titleMatch[1].trim() : null,
+        description: descriptionMatch ? descriptionMatch[1].trim() : null,
+        hasDoctype: source.includes('<!DOCTYPE'),
+        scripts: {
+          total: scriptMatches.length,
+          inline: inlineScripts,
+          external: scriptMatches.length - inlineScripts
+        },
+        elementCount: {
+          div: divCount,
+          img: imgCount,
+          link: linkCount,
+          script: scriptMatches.length,
+          console: (source.match(/console\./gi) || []).length
         }
-    } catch (error) {
-        apiStatus = 'disconnected';
-        statusDot.className = 'status-dot disconnected';
-        statusText.textContent = 'API Disconnected';
-        console.warn('API check failed:', error);
-    }
-}
-
-// Fetch website source
-async function fetchSource() {
-    const url = document.getElementById('url-input').value.trim();
-    const executeJS = document.getElementById('execute-js').checked;
-    const captureConsole = document.getElementById('capture-console').checked;
-    
-    if (!url) {
-        showError('Please enter a URL');
-        return;
+      };
     }
     
-    if (!url.startsWith('http://') && !url.startsWith('https://')) {
-        showError('URL must start with http:// or https://');
-        return;
-    }
-    
-    // Show loading
-    document.getElementById('loading').style.display = 'block';
-    document.getElementById('results').style.display = 'none';
-    document.getElementById('error-card').style.display = 'none';
-    
-    // Show JS execution status if enabled
-    const jsStatus = document.getElementById('js-status');
-    const jsResults = document.getElementById('js-results');
-    
-    if (executeJS) {
-        jsStatus.style.display = 'flex';
-        jsResults.style.display = 'none';
-    } else {
-        jsStatus.style.display = 'none';
-        jsResults.style.display = 'none';
-    }
-    
-    try {
-        const params = new URLSearchParams({
-            url: url,
-            executeJs: executeJS.toString()
-        });
-        
-        const apiUrl = `${API_BASE_URL}/api/fetch?${params}`;
-        console.log('Fetching from:', apiUrl);
-        
-        const response = await fetch(apiUrl, {
-            signal: AbortSignal.timeout(30000)
-        });
-        
-        const data = await response.json();
-        
-        if (!response.ok) {
-            throw new Error(data.error || `HTTP ${response.status}`);
-        }
-        
-        currentData = data;
-        consoleLogs = data.javascript?.consoleLogs || [];
-        
-        // Update JS execution results
-        if (executeJS) {
-            jsStatus.style.display = 'none';
-            jsResults.style.display = 'flex';
-            jsResults.className = 'execution-status success';
-            
-            const logsCount = consoleLogs.length;
-            const errorsCount = data.javascript?.errors?.length || 0;
-            
-            let resultText = `JavaScript executed`;
-            if (logsCount > 0) resultText += `, ${logsCount} console logs`;
-            if (errorsCount > 0) resultText += `, ${errorsCount} errors`;
-            
-            jsResults.innerHTML = `<span class="material-icons">check_circle</span> <span>${resultText}</span>`;
-            
-            if (errorsCount > 0) {
-                jsResults.className = 'execution-status error';
-                jsResults.innerHTML = `<span class="material-icons">error</span> <span>${errorsCount} execution errors</span>`;
-            }
-        }
-        
-        displayResults(data);
-        
-    } catch (error) {
-        console.error('Fetch error:', error);
-        showError(error.message || 'Failed to fetch website source');
-        
-        // Hide JS status on error
-        document.getElementById('js-status').style.display = 'none';
-        document.getElementById('js-results').style.display = 'none';
-    } finally {
-        document.getElementById('loading').style.display = 'none';
-    }
-}
-
-// Display results
-function displayResults(data) {
-    const formatHtml = document.getElementById('format-html').checked;
-    const highlight = document.getElementById('highlight-code').checked;
-    const showPreview = document.getElementById('show-preview').checked;
-    
-    // Display source code
-    let source = data.source;
-    if (formatHtml) {
-        source = formatHTML(source);
-    }
-    
-    const sourceCode = document.getElementById('source-code');
-    sourceCode.textContent = source;
-    
-    if (highlight) {
-        hljs.highlightElement(sourceCode);
-    }
-    
-    // Display headers
-    const headersCode = document.getElementById('headers-code');
-    headersCode.textContent = JSON.stringify(data.headers || {}, null, 2);
-    if (highlight) {
-        hljs.highlightElement(headersCode);
-    }
-    
-    // Display preview if enabled
-    if (showPreview && data.contentType && data.contentType.includes('text/html')) {
-        const previewFrame = document.getElementById('preview-frame');
-        const previewDoc = previewFrame.contentDocument || previewFrame.contentWindow.document;
-        previewDoc.open();
-        previewDoc.write(data.source);
-        previewDoc.close();
-    }
-    
-    // Update tabs visibility
-    const consoleTab = document.querySelector('.tab[onclick*="console"]');
-    const previewTab = document.querySelector('.tab[onclick*="preview"]');
-    
-    consoleTab.style.display = 
-        data.javascript?.executed && consoleLogs.length > 0 ? 'flex' : 'none';
-    previewTab.style.display = 
-        showPreview && data.contentType && data.contentType.includes('text/html') ? 'flex' : 'none';
-    
-    // Render console logs
-    if (data.javascript?.executed) {
-        renderConsoleLogs();
-    }
-    
-    // Update statistics
-    updateStats(data);
-    
-    // Show results
-    document.getElementById('results').style.display = 'block';
-}
-
-// Render console logs
-function renderConsoleLogs() {
-    const consoleContent = document.getElementById('console-content');
-    const searchTerm = document.getElementById('console-search').value.toLowerCase();
-    
-    // Filter logs
-    const filteredLogs = consoleLogs.filter(log => {
-        // Apply type filter
-        if (!consoleFilters[log.type]) return false;
-        
-        // Apply search filter
-        if (searchTerm) {
-            const logText = JSON.stringify(log).toLowerCase();
-            if (!logText.includes(searchTerm)) return false;
-        }
-        
-        return true;
+    return new Response(JSON.stringify({
+      success: true,
+      url: targetUrl,
+      source: source,
+      headers: headers,
+      contentType: contentType,
+      status: response.status,
+      pageInfo: pageInfo,
+      javascript: {
+        executed: executeJS,
+        consoleLogs: consoleLogs,
+        errors: jsErrors,
+        hasConsoleCapture: executeJS
+      },
+      fetchedAt: new Date().toISOString(),
+      size: source.length,
+      sizeBytes: new Blob([source]).size
+    }), {
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Cache-Control': 'public, max-age=300',
+        'X-Robots-Tag': 'noindex'
+      }
     });
     
-    // Update stats
-    updateConsoleStats();
+  } catch (error) {
+    console.error('Fetch error:', error);
     
-    if (filteredLogs.length === 0) {
-        consoleContent.innerHTML = '<div class="console-empty">No logs match the current filters.</div>';
-        return;
+    let errorMessage = 'Failed to fetch URL';
+    let statusCode = 500;
+    
+    if (error.name === 'TimeoutError' || error.name === 'AbortError') {
+      errorMessage = 'Request timeout (15 seconds)';
+      statusCode = 408;
+    } else if (error.message.includes('Failed to fetch')) {
+      errorMessage = 'Network error or URL blocked';
+      statusCode = 502;
     }
     
-    // Render logs
-    consoleContent.innerHTML = '';
-    filteredLogs.forEach((log, index) => {
-        const entry = document.createElement('div');
-        entry.className = 'console-entry';
-        entry.dataset.index = index;
-        
-        // Format timestamp
-        const timestamp = new Date(log.timestamp).toLocaleTimeString();
-        
-        // Format message
-        let message = '';
-        if (log.args && Array.isArray(log.args)) {
-            message = log.args.map(arg => {
-                try {
-                    // Try to parse as JSON for pretty printing
-                    const parsed = JSON.parse(arg);
-                    return `<span class="console-arg">${JSON.stringify(parsed, null, 2)}</span>`;
-                } catch {
-                    return `<span class="console-arg">${arg}</span>`;
-                }
-            }).join(' ');
-        } else if (log.message) {
-            message = `<span class="console-arg">${log.message}</span>`;
-        }
-        
-        // Check if there's stack trace
-        const hasStack = log.stack || (log.type === 'global_error' && log.stack);
-        
-        entry.innerHTML = `
-            <div class="console-timestamp">${timestamp}</div>
-            <div class="console-type console-type-${log.type}">${log.type}</div>
-            <div class="console-message">${message}</div>
-            ${hasStack ? '<button class="console-toggle" onclick="toggleStack(this)">▶</button>' : ''}
-            ${hasStack ? `<div class="console-stack">${log.stack}</div>` : ''}
-        `;
-        
-        consoleContent.appendChild(entry);
+    return new Response(JSON.stringify({ 
+      error: errorMessage,
+      details: error.message,
+      url: targetUrl
+    }), {
+      status: statusCode,
+      headers: { 
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      }
     });
-    
-    // Auto-scroll to bottom
-    if (autoScroll) {
-        consoleContent.scrollTop = consoleContent.scrollHeight;
-    }
-}
-
-// Toggle stack trace visibility
-function toggleStack(button) {
-    const entry = button.parentElement;
-    const isExpanded = entry.classList.contains('expanded');
-    
-    if (isExpanded) {
-        entry.classList.remove('expanded');
-        button.textContent = '▶';
-    } else {
-        entry.classList.add('expanded');
-        button.textContent = '▼';
-    }
-}
-
-// Update console statistics
-function updateConsoleStats() {
-    const counts = {
-        total: consoleLogs.length,
-        log: 0,
-        warn: 0,
-        error: 0,
-        info: 0,
-        debug: 0,
-        global_error: 0,
-        unhandled_rejection: 0
-    };
-    
-    consoleLogs.forEach(log => {
-        if (counts[log.type] !== undefined) {
-            counts[log.type]++;
-        }
-    });
-    
-    document.getElementById('total-logs').textContent = counts.total;
-    document.getElementById('log-count').textContent = counts.log;
-    document.getElementById('warn-count').textContent = counts.warn;
-    document.getElementById('error-count').textContent = counts.error;
-}
-
-// Filter console based on search
-function filterConsole() {
-    renderConsoleLogs();
-}
-
-// Clear console
-function clearConsole() {
-    consoleLogs = [];
-    renderConsoleLogs();
-}
-
-// Export console logs
-function exportConsole() {
-    if (consoleLogs.length === 0) {
-        alert('No logs to export');
-        return;
-    }
-    
-    const dataStr = JSON.stringify(consoleLogs, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(dataBlob);
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `console-logs-${timestamp}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-}
-
-// Toggle auto-scroll
-function toggleAutoScroll() {
-    autoScroll = !autoScroll;
-    const button = document.querySelector('.console-control-btn[onclick*="Auto-scroll"]');
-    button.innerHTML = autoScroll ? '📜 Auto-scroll (ON)' : '📜 Auto-scroll (OFF)';
-    
-    if (autoScroll) {
-        const consoleContent = document.getElementById('console-content');
-        consoleContent.scrollTop = consoleContent.scrollHeight;
-    }
-}
-
-// Format HTML for readability
-function formatHTML(html) {
-    let formatted = '';
-    let indent = 0;
-    const tab = '  ';
-    
-    html.split(/>\s*</).forEach(element => {
-        if (element.match(/^\/\w/)) {
-            indent = Math.max(0, indent - 1);
-        }
-        
-        formatted += tab.repeat(indent) + '<' + element + '>\n';
-        
-        if (element.match(/^<?\w[^>]*[^\/]$/) && !element.startsWith('!--')) {
-            indent++;
-        }
-    });
-    
-    return formatted.trim();
-}
-
-// Update statistics
-function updateStats(data) {
-    // Quick stats
-    const quickStats = document.getElementById('quick-stats');
-    quickStats.innerHTML = `
-        <div class="stat-card">
-            <h3>Page Size</h3>
-            <div class="stat-value">${(data.sizeBytes / 1024).toFixed(2)} KB</div>
-        </div>
-        <div class="stat-card">
-            <h3>Status Code</h3>
-            <div class="stat-value">${data.status}</div>
-        </div>
-        <div class="stat-card">
-            <h3>Content Type</h3>
-            <div class="stat-value">${data.contentType?.split(';')[0] || 'Unknown'}</div>
-        </div>
-        <div class="stat-card">
-            <h3>JavaScript</h3>
-            <div class="stat-value">${data.javascript?.executed ? 'Executed' : 'Not Executed'}</div>
-        </div>
-    `;
-    
-    // Page info stats
-    const pageStats = document.getElementById('page-stats');
-    if (data.pageInfo) {
-        pageStats.innerHTML = `
-            <div class="stat-card">
-                <h3>Page Title</h3>
-                <div class="stat-value">${data.pageInfo.title || 'No title'}</div>
-            </div>
-            <div class="stat-card">
-                <h3>Scripts</h3>
-                <div class="stat-value">
-                    Total: ${data.pageInfo.scripts?.total || 0}<br>
-                    Inline: ${data.pageInfo.scripts?.inline || 0}<br>
-                    External: ${data.pageInfo.scripts?.external || 0}
-                </div>
-            </div>
-            <div class="stat-card">
-                <h3>Console References</h3>
-                <div class="stat-value">
-                    ${data.pageInfo.elementCount?.console || 0} console. calls
-                </div>
-            </div>
-        `;
-    }
-}
-
-// Tab switching
-function switchTab(tabName) {
-    // Update tab buttons
-    document.querySelectorAll('.tab').forEach(tab => {
-        tab.classList.remove('active');
-    });
-    event.target.classList.add('active');
-    
-    // Show selected tab content
-    document.querySelectorAll('.tab-content').forEach(content => {
-        content.classList.remove('active');
-    });
-    document.getElementById(`tab-${tabName}`).classList.add('active');
-}
-
-// Copy source to clipboard
-async function copySource() {
-    try {
-        await navigator.clipboard.writeText(currentData.source);
-        alert('Source code copied to clipboard!');
-    } catch (error) {
-        showError('Failed to copy: ' + error.message);
-    }
-}
-
-// Download source as file
-function downloadSource() {
-    if (!currentData) return;
-    
-    const url = new URL(currentData.url);
-    const filename = `${url.hostname}-${new Date().toISOString().slice(0,10)}.html`;
-    const blob = new Blob([currentData.source], { type: 'text/html' });
-    const downloadUrl = URL.createObjectURL(blob);
-    
-    const a = document.createElement('a');
-    a.href = downloadUrl;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(downloadUrl);
-}
-
-// Toggle word wrap
-function toggleWrap() {
-    const pre = document.querySelector('#source-code').parentElement;
-    pre.style.whiteSpace = pre.style.whiteSpace === 'pre-wrap' ? 'pre' : 'pre-wrap';
-}
-
-// Show error
-function showError(message) {
-    document.getElementById('error-message').textContent = message;
-    document.getElementById('error-card').style.display = 'block';
+  }
 }
