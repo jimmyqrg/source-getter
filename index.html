@@ -6,9 +6,46 @@
     <title>Website Source Fetcher with Console</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css">
     <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Add minimal inline styles to ensure something shows immediately */
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .loading-message {
+            text-align: center;
+            color: white;
+            font-size: 18px;
+            margin-top: 50px;
+        }
+        
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid white;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
+    <div class="loading-message" id="initial-loading">
+        <div class="spinner"></div>
+        <p>Loading application...</p>
+    </div>
+
+    <div class="container" id="app-container" style="display: none;">
         <header>
             <h1>🌐 Website Source Fetcher with Console</h1>
             <p class="subtitle">Fetch HTML, execute JavaScript, and view console output</p>
@@ -169,7 +206,27 @@
         </footer>
     </div>
 
+    <!-- Load scripts at the end of body -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
     <script src="app.js"></script>
+    
+    <script>
+        // Simple loader to show app when resources are ready
+        window.addEventListener('load', function() {
+            // Hide initial loader
+            document.getElementById('initial-loading').style.display = 'none';
+            
+            // Show app container
+            const appContainer = document.getElementById('app-container');
+            if (appContainer) {
+                appContainer.style.display = 'block';
+            }
+            
+            // Initialize app if the functions exist
+            if (typeof initApp === 'function') {
+                initApp();
+            }
+        });
+    </script>
 </body>
 </html>
