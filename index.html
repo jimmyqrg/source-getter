@@ -6,6 +6,8 @@
     <title>Website Source Fetcher with Console</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css">
     <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         /* Add minimal inline styles to ensure something shows immediately */
         body {
@@ -47,7 +49,7 @@
 
     <div class="container" id="app-container" style="display: none;">
         <header>
-            <h1>🌐 Website Source Fetcher with Console</h1>
+            <h1><span class="material-icons">code</span> Website Source Fetcher with Console</h1>
             <p class="subtitle">Fetch HTML, execute JavaScript, and view console output</p>
             <div class="api-status">
                 <span class="status-dot" id="status-dot"></span>
@@ -67,7 +69,7 @@
                         spellcheck="false"
                     >
                     <button onclick="fetchSource()" class="btn btn-primary">
-                        <span>🔍</span> Fetch Source
+                        <span class="material-icons">search</span> Fetch Source
                     </button>
                 </div>
                 
@@ -123,13 +125,13 @@
                             <span>HTML Source Code</span>
                             <div class="code-toolbar">
                                 <button class="code-btn" onclick="copySource()">
-                                    <span>📋</span> Copy
+                                    <span class="material-icons">content_copy</span> Copy
                                 </button>
                                 <button class="code-btn" onclick="downloadSource()">
-                                    <span>💾</span> Download
+                                    <span class="material-icons">download</span> Download
                                 </button>
                                 <button class="code-btn" onclick="toggleWrap()">
-                                    <span>↔️</span> Toggle Wrap
+                                    <span class="material-icons">wrap_text</span> Toggle Wrap
                                 </button>
                             </div>
                         </div>
@@ -149,13 +151,13 @@
                             <div>Console Output</div>
                             <div class="console-controls">
                                 <button class="console-control-btn" onclick="clearConsole()">
-                                    <span>🗑️</span> Clear
+                                    <span class="material-icons">delete</span> Clear
                                 </button>
                                 <button class="console-control-btn" onclick="exportConsole()">
-                                    <span>📥</span> Export
+                                    <span class="material-icons">file_download</span> Export
                                 </button>
                                 <button class="console-control-btn" onclick="toggleAutoScroll()">
-                                    <span>📜</span> Auto-scroll
+                                    <span class="material-icons">scrollable</span> Auto-scroll
                                 </button>
                             </div>
                         </div>
