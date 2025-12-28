@@ -172,11 +172,11 @@ async function fetchSource() {
             if (logsCount > 0) resultText += `, ${logsCount} console logs`;
             if (errorsCount > 0) resultText += `, ${errorsCount} errors`;
             
-            jsResults.innerHTML = `<span>✓</span> <span>${resultText}</span>`;
+            jsResults.innerHTML = `<span class="material-icons">check_circle</span> <span>${resultText}</span>`;
             
             if (errorsCount > 0) {
                 jsResults.className = 'execution-status error';
-                jsResults.innerHTML = `<span>✗</span> <span>${errorsCount} execution errors</span>`;
+                jsResults.innerHTML = `<span class="material-icons">error</span> <span>${errorsCount} execution errors</span>`;
             }
         }
         
