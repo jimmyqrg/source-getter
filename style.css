@@ -1,603 +1,600 @@
-:root {
-    --primary: #2563eb;
-    --primary-dark: #1d4ed8;
-    --secondary: #64748b;
-    --success: #10b981;
-    --danger: #ef4444;
-    --warning: #f59e0b;
-    --light: #f8fafc;
-    --dark: #1e293b;
-    --border: #e2e8f0;
-    --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
-}
-
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
-body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-    line-height: 1.6;
-    color: var(--dark);
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    min-height: 100vh;
-    padding: 20px;
-}
-
-.container {
-    max-width: 1400px;
-    margin: 0 auto;
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-    overflow: hidden;
-}
-
-header {
-    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-    color: white;
-    padding: 2rem;
-    text-align: center;
-}
-
-header h1 {
-    font-size: 2.5rem;
-    font-weight: 800;
-    margin-bottom: 0.5rem;
-}
-
-.subtitle {
-    opacity: 0.9;
-    font-size: 1.1rem;
-    max-width: 600px;
-    margin: 0 auto;
-}
-
-.api-status {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 9999px;
-    margin-top: 1rem;
-    font-size: 0.9rem;
-}
-
-.status-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: #10b981;
-}
-
-.status-dot.disconnected {
-    background: var(--danger);
-    animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
-}
-
-main {
-    padding: 2rem;
-}
-
-.input-section {
-    background: var(--light);
-    padding: 1.5rem;
-    border-radius: 8px;
-    margin-bottom: 2rem;
-    border: 2px solid var(--border);
-}
-
-.url-input-group {
-    display: flex;
-    gap: 1rem;
-    margin-bottom: 1rem;
-}
-
-#url-input {
-    flex: 1;
-    padding: 0.875rem 1rem;
-    font-size: 1rem;
-    border: 2px solid var(--primary);
-    border-radius: 8px;
-    outline: none;
-    transition: all 0.2s;
-}
-
-#url-input:focus {
-    border-color: var(--primary-dark);
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-}
-
-.btn {
-    padding: 0.875rem 1.5rem;
-    font-size: 1rem;
-    font-weight: 600;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    transition: all 0.2s;
-}
-
-.btn-primary {
-    background: var(--primary);
-    color: white;
-}
-
-.btn-primary:hover {
-    background: var(--primary-dark);
-    transform: translateY(-1px);
-    box-shadow: var(--shadow);
-}
-
-.btn-secondary {
-    background: var(--secondary);
-    color: white;
-}
-
-.btn-secondary:hover {
-    background: #475569;
-}
-
-.options {
-    display: flex;
-    gap: 1.5rem;
-    flex-wrap: wrap;
-}
-
-.option-label {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    cursor: pointer;
-    user-select: none;
-}
-
-.loading {
-    text-align: center;
-    padding: 3rem;
-    display: none;
-}
-
-.loading .spinner {
-    width: 40px;
-    height: 40px;
-    border: 3px solid var(--border);
-    border-top-color: var(--primary);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin: 0 auto 1rem;
-}
-
-@keyframes spin {
-    to { transform: rotate(360deg); }
-}
-
-.tabs {
-    display: flex;
-    gap: 0.5rem;
-    margin-bottom: 1.5rem;
-    border-bottom: 2px solid var(--border);
-}
-
-.tab {
-    padding: 0.75rem 1.5rem;
-    background: none;
-    border: none;
-    font-weight: 600;
-    color: var(--secondary);
-    cursor: pointer;
-    position: relative;
-    transition: color 0.2s;
-}
-
-.tab:hover {
-    color: var(--primary);
-}
-
-.tab.active {
-    color: var(--primary);
-}
-
-.tab.active::after {
-    content: '';
-    position: absolute;
-    bottom: -2px;
-    left: 0;
-    right: 0;
-    height: 2px;
-    background: var(--primary);
-}
-
-.tab-content {
-    display: none;
-    animation: fadeIn 0.3s;
-}
-
-.tab-content.active {
-    display: block;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-.code-container {
-    background: #1e293b;
-    border-radius: 8px;
-    overflow: hidden;
-    margin-bottom: 1rem;
-    max-height: 600px;
-    overflow-y: auto;
-}
-
-.code-header {
-    padding: 0.75rem 1rem;
-    background: #0f172a;
-    color: #94a3b8;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 0.875rem;
-}
-
-.code-toolbar {
-    display: flex;
-    gap: 0.5rem;
-}
-
-.code-btn {
-    padding: 0.375rem 0.75rem;
-    background: #334155;
-    color: #cbd5e1;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 0.875rem;
-    display: flex;
-    align-items: center;
-    gap: 0.375rem;
-    transition: background 0.2s;
-}
-
-.code-btn:hover {
-    background: #475569;
-}
-
-pre {
-    margin: 0;
-    padding: 1rem;
-}
-
-.preview-container {
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    overflow: hidden;
-    height: 600px;
-}
-
-#preview-frame {
-    width: 100%;
-    height: 100%;
-    border: none;
-}
-
-.stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
-    margin-top: 2rem;
-}
-
-.stat-card {
-    background: var(--light);
-    padding: 1rem;
-    border-radius: 8px;
-    border-left: 4px solid var(--primary);
-}
-
-.stat-card h3 {
-    font-size: 0.875rem;
-    color: var(--secondary);
-    margin-bottom: 0.5rem;
-}
-
-.stat-value {
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: var(--dark);
-}
-
-.error-card {
-    background: #fef2f2;
-    border: 1px solid #fecaca;
-    border-left: 4px solid var(--danger);
-    padding: 1rem;
-    border-radius: 8px;
-    margin: 1rem 0;
-    color: #7f1d1d;
-    display: none;
-}
-
-footer {
-    background: var(--light);
-    padding: 1.5rem;
-    text-align: center;
-    border-top: 1px solid var(--border);
-    color: var(--secondary);
-}
-
-footer a {
-    color: var(--primary);
-    text-decoration: none;
-}
-
-footer a:hover {
-    text-decoration: underline;
-}
-
-/* Console Styles */
-.console-container {
-    background: #1e1e1e;
-    border-radius: 8px;
-    overflow: hidden;
-    height: 400px;
-    display: flex;
-    flex-direction: column;
-    margin-bottom: 1rem;
-}
-
-.console-header {
-    background: #252526;
-    padding: 0.75rem 1rem;
-    color: #cccccc;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid #333;
-}
-
-.console-controls {
-    display: flex;
-    gap: 0.5rem;
-}
-
-.console-control-btn {
-    padding: 0.375rem 0.75rem;
-    background: #333;
-    color: #ccc;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 0.875rem;
-    display: flex;
-    align-items: center;
-    gap: 0.375rem;
-}
-
-.console-control-btn:hover {
-    background: #444;
-}
-
-.console-content {
-    flex: 1;
-    overflow-y: auto;
-    padding: 0.5rem;
-    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-    font-size: 0.875rem;
-}
-
-.console-entry {
-    padding: 0.25rem 0.5rem;
-    border-bottom: 1px solid #2d2d2d;
-    display: flex;
-    gap: 0.75rem;
-    align-items: flex-start;
-}
-
-.console-timestamp {
-    color: #6a9955;
-    font-size: 0.75rem;
-    min-width: 120px;
-    flex-shrink: 0;
-}
-
-.console-type {
-    padding: 0.125rem 0.375rem;
-    border-radius: 4px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    flex-shrink: 0;
-    min-width: 60px;
-    text-align: center;
-}
-
-.console-type-log { background: #007acc; color: white; }
-.console-type-warn { background: #cca700; color: black; }
-.console-type-error { background: #f44747; color: white; }
-.console-type-info { background: #4ec9b0; color: black; }
-.console-type-debug { background: #888; color: white; }
-.console-type-global_error { background: #d16969; color: white; }
-.console-type-unhandled_rejection { background: #c586c0; color: white; }
-
-.console-message {
-    color: #d4d4d4;
-    white-space: pre-wrap;
-    word-break: break-word;
-    flex: 1;
-}
-
-.console-arg {
-    background: #2a2d2e;
-    padding: 0.125rem 0.375rem;
-    border-radius: 3px;
-    margin-right: 0.25rem;
-    font-family: 'Consolas', 'Monaco', monospace;
-}
-
-.console-stack {
-    color: #888;
-    font-size: 0.75rem;
-    padding-left: 1rem;
-    margin-top: 0.25rem;
-    display: none;
-}
-
-.console-entry.expanded .console-stack {
-    display: block;
-}
-
-.console-toggle {
-    background: none;
-    border: none;
-    color: #888;
-    cursor: pointer;
-    padding: 0.125rem;
-    font-size: 0.75rem;
-}
-
-.console-empty {
-    color: #888;
-    text-align: center;
-    padding: 2rem;
-    font-style: italic;
-}
-
-.console-filter {
-    display: flex;
-    gap: 0.5rem;
-    align-items: center;
-    flex-wrap: wrap;
-}
-
-.filter-checkbox {
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-    color: #ccc;
-    font-size: 0.875rem;
-    cursor: pointer;
-}
-
-.filter-checkbox input[type="checkbox"] {
-    margin: 0;
-}
-
-.console-search {
-    padding: 0.375rem 0.75rem;
-    background: #333;
-    border: 1px solid #444;
-    border-radius: 4px;
-    color: #ccc;
-    min-width: 200px;
-}
-
-.js-execution-controls {
-    display: flex;
-    gap: 1rem;
-    align-items: center;
-    margin-top: 0.5rem;
-}
-
-.execution-status {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.375rem 0.75rem;
-    border-radius: 4px;
-    font-size: 0.875rem;
-}
-
-.execution-status.running {
-    background: rgba(37, 99, 235, 0.1);
-    color: var(--primary);
-}
-
-.execution-status.success {
-    background: rgba(16, 185, 129, 0.1);
-    color: var(--success);
-}
-
-.execution-status.error {
-    background: rgba(239, 68, 68, 0.1);
-    color: var(--danger);
-}
-
-.console-stat {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: #ccc;
-    font-size: 0.875rem;
-}
-
-.stat-badge {
-    padding: 0.125rem 0.375rem;
-    border-radius: 9999px;
-    font-size: 0.75rem;
-    font-weight: 600;
-}
-
-.stat-log { background: #007acc; }
-.stat-warn { background: #cca700; }
-.stat-error { background: #f44747; }
-
-/* Animations */
-@keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
-}
-
-.pulse {
-    animation: pulse 1.5s infinite;
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-    body {
-        padding: 10px;
+// Configuration
+const API_BASE_URL = 'https://source.ikunbeautiful.workers.dev';
+
+// State
+let currentData = null;
+let apiStatus = 'checking';
+let consoleLogs = [];
+let autoScroll = true;
+let consoleFilters = {
+    log: true,
+    warn: true,
+    error: true,
+    info: true,
+    debug: true,
+    global_error: true,
+    unhandled_rejection: true
+};
+
+// Initialize function to be called from HTML
+function initApp() {
+    updateApiEndpoint();
+    checkApiStatus();
+    initConsoleFilters();
+    
+    // Enter key support
+    const urlInput = document.getElementById('url-input');
+    if (urlInput) {
+        urlInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') fetchSource();
+        });
     }
     
-    .url-input-group {
-        flex-direction: column;
+    // Initialize highlight.js if available
+    if (typeof hljs !== 'undefined') {
+        hljs.configure({
+            languages: ['html', 'xml', 'json', 'javascript'],
+            cssSelector: 'pre code'
+        });
     }
     
-    .tabs {
-        overflow-x: auto;
-        white-space: nowrap;
+    // Initialize console auto-scroll observer
+    const consoleContent = document.getElementById('console-content');
+    if (consoleContent) {
+        consoleContent.addEventListener('scroll', () => {
+            const isAtBottom = consoleContent.scrollHeight - consoleContent.clientHeight <= consoleContent.scrollTop + 1;
+            if (isAtBottom) {
+                const button = document.querySelector('.console-control-btn[onclick*="Auto-scroll"]');
+                if (button) {
+                    button.innerHTML = '📜 Auto-scroll (ON)';
+                }
+            }
+        });
     }
     
-    .preview-container,
-    .code-container {
-        max-height: 400px;
+    console.log('App initialized successfully');
+}
+
+// Initialize console filter UI
+function initConsoleFilters() {
+    const filterContainer = document.getElementById('console-filter');
+    if (!filterContainer) return;
+    
+    const types = [
+        { id: 'log', label: 'Log', color: '#007acc' },
+        { id: 'warn', label: 'Warn', color: '#cca700' },
+        { id: 'error', label: 'Error', color: '#f44747' },
+        { id: 'info', label: 'Info', color: '#4ec9b0' },
+        { id: 'debug', label: 'Debug', color: '#888' },
+        { id: 'global_error', label: 'Global Error', color: '#d16969' },
+        { id: 'unhandled_rejection', label: 'Promise Error', color: '#c586c0' }
+    ];
+    
+    types.forEach(type => {
+        const label = document.createElement('label');
+        label.className = 'filter-checkbox';
+        label.innerHTML = `
+            <input type="checkbox" id="filter-${type.id}" checked 
+                   onchange="toggleConsoleFilter('${type.id}', this.checked)">
+            <span style="color: ${type.color}">${type.label}</span>
+        `;
+        filterContainer.appendChild(label);
+    });
+}
+
+// Toggle console filter
+function toggleConsoleFilter(type, enabled) {
+    consoleFilters[type] = enabled;
+    renderConsoleLogs();
+}
+
+// Update displayed API endpoint
+function updateApiEndpoint() {
+    const endpointElement = document.getElementById('api-endpoint');
+    if (endpointElement) {
+        endpointElement.textContent = API_BASE_URL;
+    }
+}
+
+// Check if API is reachable
+async function checkApiStatus() {
+    const statusDot = document.getElementById('status-dot');
+    const statusText = document.getElementById('api-status-text');
+    
+    if (!statusDot || !statusText) return;
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/health`, {
+            signal: AbortSignal.timeout(5000)
+        });
+        
+        if (response.ok) {
+            apiStatus = 'connected';
+            statusDot.className = 'status-dot';
+            statusText.textContent = 'API Connected';
+        } else {
+            throw new Error('API not responding');
+        }
+    } catch (error) {
+        apiStatus = 'disconnected';
+        statusDot.className = 'status-dot disconnected';
+        statusText.textContent = 'API Disconnected';
+        console.warn('API check failed:', error);
+    }
+}
+
+// Fetch website source
+async function fetchSource() {
+    const urlInput = document.getElementById('url-input');
+    if (!urlInput) return;
+    
+    const url = urlInput.value.trim();
+    const executeJS = document.getElementById('execute-js')?.checked || false;
+    const captureConsole = document.getElementById('capture-console')?.checked || false;
+    
+    if (!url) {
+        showError('Please enter a URL');
+        return;
     }
     
-    .stats-grid {
-        grid-template-columns: 1fr;
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        showError('URL must start with http:// or https://');
+        return;
     }
     
-    .console-container {
-        height: 300px;
+    // Show loading
+    const loadingElement = document.getElementById('loading');
+    const resultsElement = document.getElementById('results');
+    const errorCard = document.getElementById('error-card');
+    
+    if (loadingElement) loadingElement.style.display = 'block';
+    if (resultsElement) resultsElement.style.display = 'none';
+    if (errorCard) errorCard.style.display = 'none';
+    
+    // Show JS execution status if enabled
+    const jsStatus = document.getElementById('js-status');
+    const jsResults = document.getElementById('js-results');
+    
+    if (executeJS && jsStatus) {
+        jsStatus.style.display = 'flex';
+    }
+    if (jsResults) {
+        jsResults.style.display = 'none';
     }
     
-    .console-filter {
-        flex-direction: column;
-        align-items: flex-start;
+    try {
+        const params = new URLSearchParams({
+            url: url,
+            executeJs: executeJS.toString()
+        });
+        
+        const apiUrl = `${API_BASE_URL}/api/fetch?${params}`;
+        console.log('Fetching from:', apiUrl);
+        
+        const response = await fetch(apiUrl, {
+            signal: AbortSignal.timeout(30000)
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.error || `HTTP ${response.status}`);
+        }
+        
+        currentData = data;
+        consoleLogs = data.javascript?.consoleLogs || [];
+        
+        // Update JS execution results
+        if (executeJS && jsStatus && jsResults) {
+            jsStatus.style.display = 'none';
+            jsResults.style.display = 'flex';
+            jsResults.className = 'execution-status success';
+            
+            const logsCount = consoleLogs.length;
+            const errorsCount = data.javascript?.errors?.length || 0;
+            
+            let resultText = `JavaScript executed`;
+            if (logsCount > 0) resultText += `, ${logsCount} console logs`;
+            if (errorsCount > 0) resultText += `, ${errorsCount} errors`;
+            
+            jsResults.innerHTML = `<span>✓</span> <span>${resultText}</span>`;
+            
+            if (errorsCount > 0) {
+                jsResults.className = 'execution-status error';
+                jsResults.innerHTML = `<span>✗</span> <span>${errorsCount} execution errors</span>`;
+            }
+        }
+        
+        displayResults(data);
+        
+    } catch (error) {
+        console.error('Fetch error:', error);
+        showError(error.message || 'Failed to fetch website source');
+        
+        // Hide JS status on error
+        if (jsStatus) jsStatus.style.display = 'none';
+        if (jsResults) jsResults.style.display = 'none';
+    } finally {
+        if (loadingElement) loadingElement.style.display = 'none';
+    }
+}
+
+// Display results
+function displayResults(data) {
+    const formatHtml = document.getElementById('format-html')?.checked || false;
+    const showPreview = document.getElementById('show-preview')?.checked || false;
+    
+    // Display source code
+    let source = data.source;
+    if (formatHtml) {
+        source = formatHTML(source);
     }
     
-    .console-search {
-        min-width: 100%;
+    const sourceCode = document.getElementById('source-code');
+    if (sourceCode) {
+        sourceCode.textContent = source;
+        
+        // Apply syntax highlighting if available
+        if (typeof hljs !== 'undefined') {
+            hljs.highlightElement(sourceCode);
+        }
     }
+    
+    // Display headers
+    const headersCode = document.getElementById('headers-code');
+    if (headersCode) {
+        headersCode.textContent = JSON.stringify(data.headers || {}, null, 2);
+        if (typeof hljs !== 'undefined') {
+            hljs.highlightElement(headersCode);
+        }
+    }
+    
+    // Display preview if enabled
+    if (showPreview && data.contentType && data.contentType.includes('text/html')) {
+        const previewFrame = document.getElementById('preview-frame');
+        if (previewFrame) {
+            const previewDoc = previewFrame.contentDocument || previewFrame.contentWindow.document;
+            previewDoc.open();
+            previewDoc.write(data.source);
+            previewDoc.close();
+        }
+    }
+    
+    // Update tabs visibility
+    const consoleTab = document.querySelector('.tab[onclick*="console"]');
+    const previewTab = document.querySelector('.tab[onclick*="preview"]');
+    
+    if (consoleTab) {
+        consoleTab.style.display = 
+            data.javascript?.executed && consoleLogs.length > 0 ? 'flex' : 'none';
+    }
+    
+    if (previewTab) {
+        previewTab.style.display = 
+            showPreview && data.contentType && data.contentType.includes('text/html') ? 'flex' : 'none';
+    }
+    
+    // Render console logs
+    if (data.javascript?.executed) {
+        renderConsoleLogs();
+    }
+    
+    // Update statistics
+    updateStats(data);
+    
+    // Show results
+    const resultsElement = document.getElementById('results');
+    if (resultsElement) {
+        resultsElement.style.display = 'block';
+    }
+}
+
+// Render console logs
+function renderConsoleLogs() {
+    const consoleContent = document.getElementById('console-content');
+    const searchInput = document.getElementById('console-search');
+    const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+    
+    if (!consoleContent) return;
+    
+    // Filter logs
+    const filteredLogs = consoleLogs.filter(log => {
+        // Apply type filter
+        if (!consoleFilters[log.type]) return false;
+        
+        // Apply search filter
+        if (searchTerm) {
+            const logText = JSON.stringify(log).toLowerCase();
+            if (!logText.includes(searchTerm)) return false;
+        }
+        
+        return true;
+    });
+    
+    // Update stats
+    updateConsoleStats();
+    
+    if (filteredLogs.length === 0) {
+        consoleContent.innerHTML = '<div class="console-empty">No logs match the current filters.</div>';
+        return;
+    }
+    
+    // Render logs
+    consoleContent.innerHTML = '';
+    filteredLogs.forEach((log, index) => {
+        const entry = document.createElement('div');
+        entry.className = 'console-entry';
+        entry.dataset.index = index;
+        
+        // Format timestamp
+        const timestamp = new Date(log.timestamp).toLocaleTimeString();
+        
+        // Format message
+        let message = '';
+        if (log.args && Array.isArray(log.args)) {
+            message = log.args.map(arg => {
+                try {
+                    // Try to parse as JSON for pretty printing
+                    const parsed = JSON.parse(arg);
+                    return `<span class="console-arg">${JSON.stringify(parsed, null, 2)}</span>`;
+                } catch {
+                    return `<span class="console-arg">${arg}</span>`;
+                }
+            }).join(' ');
+        } else if (log.message) {
+            message = `<span class="console-arg">${log.message}</span>`;
+        }
+        
+        // Check if there's stack trace
+        const hasStack = log.stack || (log.type === 'global_error' && log.stack);
+        
+        entry.innerHTML = `
+            <div class="console-timestamp">${timestamp}</div>
+            <div class="console-type console-type-${log.type}">${log.type}</div>
+            <div class="console-message">${message}</div>
+            ${hasStack ? '<button class="console-toggle" onclick="toggleStack(this)">▶</button>' : ''}
+            ${hasStack ? `<div class="console-stack">${log.stack}</div>` : ''}
+        `;
+        
+        consoleContent.appendChild(entry);
+    });
+    
+    // Auto-scroll to bottom
+    if (autoScroll) {
+        consoleContent.scrollTop = consoleContent.scrollHeight;
+    }
+}
+
+// Toggle stack trace visibility
+function toggleStack(button) {
+    const entry = button.parentElement;
+    const isExpanded = entry.classList.contains('expanded');
+    
+    if (isExpanded) {
+        entry.classList.remove('expanded');
+        button.textContent = '▶';
+    } else {
+        entry.classList.add('expanded');
+        button.textContent = '▼';
+    }
+}
+
+// Update console statistics
+function updateConsoleStats() {
+    const counts = {
+        total: consoleLogs.length,
+        log: 0,
+        warn: 0,
+        error: 0,
+        info: 0,
+        debug: 0,
+        global_error: 0,
+        unhandled_rejection: 0
+    };
+    
+    consoleLogs.forEach(log => {
+        if (counts[log.type] !== undefined) {
+            counts[log.type]++;
+        }
+    });
+    
+    const totalLogsElement = document.getElementById('total-logs');
+    const logCountElement = document.getElementById('log-count');
+    const warnCountElement = document.getElementById('warn-count');
+    const errorCountElement = document.getElementById('error-count');
+    
+    if (totalLogsElement) totalLogsElement.textContent = counts.total;
+    if (logCountElement) logCountElement.textContent = counts.log;
+    if (warnCountElement) warnCountElement.textContent = counts.warn;
+    if (errorCountElement) errorCountElement.textContent = counts.error;
+}
+
+// Filter console based on search
+function filterConsole() {
+    renderConsoleLogs();
+}
+
+// Clear console
+function clearConsole() {
+    consoleLogs = [];
+    renderConsoleLogs();
+}
+
+// Export console logs
+function exportConsole() {
+    if (consoleLogs.length === 0) {
+        alert('No logs to export');
+        return;
+    }
+    
+    const dataStr = JSON.stringify(consoleLogs, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `console-logs-${timestamp}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+// Toggle auto-scroll
+function toggleAutoScroll() {
+    autoScroll = !autoScroll;
+    const button = document.querySelector('.console-control-btn[onclick*="Auto-scroll"]');
+    if (button) {
+        button.innerHTML = autoScroll ? '📜 Auto-scroll (ON)' : '📜 Auto-scroll (OFF)';
+    }
+    
+    if (autoScroll) {
+        const consoleContent = document.getElementById('console-content');
+        if (consoleContent) {
+            consoleContent.scrollTop = consoleContent.scrollHeight;
+        }
+    }
+}
+
+// Format HTML for readability
+function formatHTML(html) {
+    let formatted = '';
+    let indent = 0;
+    const tab = '  ';
+    
+    html.split(/>\s*</).forEach(element => {
+        if (element.match(/^\/\w/)) {
+            indent = Math.max(0, indent - 1);
+        }
+        
+        formatted += tab.repeat(indent) + '<' + element + '>\n';
+        
+        if (element.match(/^<?\w[^>]*[^\/]$/) && !element.startsWith('!--')) {
+            indent++;
+        }
+    });
+    
+    return formatted.trim();
+}
+
+// Update statistics
+function updateStats(data) {
+    // Quick stats
+    const quickStats = document.getElementById('quick-stats');
+    if (quickStats) {
+        quickStats.innerHTML = `
+            <div class="stat-card">
+                <h3>Page Size</h3>
+                <div class="stat-value">${(data.sizeBytes / 1024).toFixed(2)} KB</div>
+            </div>
+            <div class="stat-card">
+                <h3>Status Code</h3>
+                <div class="stat-value">${data.status}</div>
+            </div>
+            <div class="stat-card">
+                <h3>Content Type</h3>
+                <div class="stat-value">${data.contentType?.split(';')[0] || 'Unknown'}</div>
+            </div>
+            <div class="stat-card">
+                <h3>JavaScript</h3>
+                <div class="stat-value">${data.javascript?.executed ? 'Executed' : 'Not Executed'}</div>
+            </div>
+        `;
+    }
+    
+    // Page info stats
+    const pageStats = document.getElementById('page-stats');
+    if (pageStats && data.pageInfo) {
+        pageStats.innerHTML = `
+            <div class="stat-card">
+                <h3>Page Title</h3>
+                <div class="stat-value">${data.pageInfo.title || 'No title'}</div>
+            </div>
+            <div class="stat-card">
+                <h3>Scripts</h3>
+                <div class="stat-value">
+                    Total: ${data.pageInfo.scripts?.total || 0}<br>
+                    Inline: ${data.pageInfo.scripts?.inline || 0}<br>
+                    External: ${data.pageInfo.scripts?.external || 0}
+                </div>
+            </div>
+            <div class="stat-card">
+                <h3>Console References</h3>
+                <div class="stat-value">
+                    ${data.pageInfo.elementCount?.console || 0} console. calls
+                </div>
+            </div>
+        `;
+    }
+}
+
+// Tab switching
+function switchTab(tabName) {
+    if (!event || !event.target) return;
+    
+    // Update tab buttons
+    document.querySelectorAll('.tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    event.target.classList.add('active');
+    
+    // Show selected tab content
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+    });
+    const tabElement = document.getElementById(`tab-${tabName}`);
+    if (tabElement) {
+        tabElement.classList.add('active');
+    }
+}
+
+// Copy source to clipboard
+async function copySource() {
+    if (!currentData) return;
+    
+    try {
+        await navigator.clipboard.writeText(currentData.source);
+        alert('Source code copied to clipboard!');
+    } catch (error) {
+        showError('Failed to copy: ' + error.message);
+    }
+}
+
+// Download source as file
+function downloadSource() {
+    if (!currentData) return;
+    
+    const url = new URL(currentData.url);
+    const filename = `${url.hostname}-${new Date().toISOString().slice(0,10)}.html`;
+    const blob = new Blob([currentData.source], { type: 'text/html' });
+    const downloadUrl = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = downloadUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(downloadUrl);
+}
+
+// Toggle word wrap
+function toggleWrap() {
+    const sourceCode = document.getElementById('source-code');
+    if (!sourceCode) return;
+    
+    const pre = sourceCode.parentElement;
+    if (pre) {
+        pre.style.whiteSpace = pre.style.whiteSpace === 'pre-wrap' ? 'pre' : 'pre-wrap';
+    }
+}
+
+// Show error
+function showError(message) {
+    const errorMessageElement = document.getElementById('error-message');
+    const errorCard = document.getElementById('error-card');
+    
+    if (errorMessageElement) errorMessageElement.textContent = message;
+    if (errorCard) errorCard.style.display = 'block';
 }
