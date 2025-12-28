@@ -92,6 +92,11 @@
             animation: pulse 2s infinite;
         }
         
+        .status-dot.checking {
+            background: var(--warning);
+            animation: pulse 1s infinite;
+        }
+        
         @keyframes pulse {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.5; }
@@ -215,16 +220,6 @@
             100% { transform: rotate(360deg); }
         }
         
-        .results-container {
-            display: none;
-            animation: fadeIn 0.5s;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
         .tabs {
             display: flex;
             gap: 5px;
@@ -270,22 +265,6 @@
         
         .tab-pane.active {
             display: block;
-        }
-        
-        .toolbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px;
-            background: #f8f9fa;
-            border-bottom: 1px solid #dee2e6;
-            border-radius: 10px 10px 0 0;
-        }
-        
-        .char-count {
-            font-size: 0.9rem;
-            color: #666;
-            font-weight: 500;
         }
         
         .code-container {
@@ -336,17 +315,14 @@
             gap: 10px;
         }
         
-        .error-container {
-            display: none;
-            animation: fadeIn 0.5s;
-        }
-        
         .error-card {
             background: #fee;
             border-left: 5px solid var(--danger);
             padding: 25px;
             border-radius: 15px;
             color: #721c24;
+            display: none;
+            margin: 1rem 0;
         }
         
         .error-card h3 {
@@ -626,7 +602,7 @@
             </h1>
             <p class="subtitle">Fetch HTML, execute JavaScript, and view console output</p>
             <div class="api-status">
-                <span class="status-dot" id="status-dot"></span>
+                <span class="status-dot checking" id="status-dot"></span>
                 <span id="api-status-text">Checking API...</span>
             </div>
         </header>
@@ -794,12 +770,11 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
     <script>
-        // Configuration
+        // Configuration - MAKE SURE THIS MATCHES YOUR WORKER URL
         const API_BASE_URL = 'https://source.ikunbeautiful.workers.dev';
         
         // State
         let currentData = null;
-        let apiStatus = 'checking';
         let consoleLogs = [];
         let autoScroll = true;
         let consoleFilters = {
@@ -812,36 +787,43 @@
             unhandled_rejection: true
         };
         
-        // Initialize
+        // Initialize - Wait for page to fully load
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('Page loaded, initializing...');
+            
+            // Update API endpoint display
             updateApiEndpoint();
-            checkApiStatus();
+            
+            // Initialize console filters
             initConsoleFilters();
             
-            // Enter key support
-            document.getElementById('url-input').addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') fetchSource();
-            });
+            // Setup event listeners
+            setupEventListeners();
             
             // Initialize highlight.js
-            hljs.configure({
-                languages: ['html', 'xml', 'json', 'javascript'],
-                cssSelector: 'pre code'
-            });
+            if (typeof hljs !== 'undefined') {
+                hljs.configure({
+                    languages: ['html', 'xml', 'json', 'javascript'],
+                    cssSelector: 'pre code'
+                });
+            }
             
-            // Initialize console auto-scroll observer
-            const consoleContent = document.getElementById('console-content');
-            consoleContent.addEventListener('scroll', () => {
-                const isAtBottom = consoleContent.scrollHeight - consoleContent.clientHeight <= consoleContent.scrollTop + 1;
-                if (isAtBottom) {
-                    document.querySelector('.console-control-btn[onclick*="toggleAutoScroll"]').innerHTML = '<span class="material-icons">scrollable</span> Auto-scroll (ON)';
-                }
-            });
+            // Delay API check to avoid immediate errors
+            setTimeout(() => {
+                checkApiStatus();
+            }, 1000);
+            
+            console.log('Initialization complete');
         });
         
         // Initialize console filter UI
         function initConsoleFilters() {
             const filterContainer = document.getElementById('console-filter');
+            if (!filterContainer) {
+                console.warn('Console filter container not found');
+                return;
+            }
+            
             const types = [
                 { id: 'log', label: 'Log', color: '#007acc' },
                 { id: 'warn', label: 'Warn', color: '#cca700' },
@@ -864,6 +846,29 @@
             });
         }
         
+        // Setup event listeners
+        function setupEventListeners() {
+            // Enter key support
+            const urlInput = document.getElementById('url-input');
+            if (urlInput) {
+                urlInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') fetchSource();
+                });
+            }
+            
+            // Initialize console auto-scroll observer
+            const consoleContent = document.getElementById('console-content');
+            if (consoleContent) {
+                consoleContent.addEventListener('scroll', () => {
+                    const isAtBottom = consoleContent.scrollHeight - consoleContent.clientHeight <= consoleContent.scrollTop + 1;
+                    const button = document.querySelector('.console-control-btn[onclick*="toggleAutoScroll"]');
+                    if (button && isAtBottom) {
+                        button.innerHTML = '<span class="material-icons">scrollable</span> Auto-scroll (ON)';
+                    }
+                });
+            }
+        }
+        
         // Toggle console filter
         function toggleConsoleFilter(type, enabled) {
             consoleFilters[type] = enabled;
@@ -872,39 +877,75 @@
         
         // Update displayed API endpoint
         function updateApiEndpoint() {
-            document.getElementById('api-endpoint').textContent = API_BASE_URL;
+            const endpointElement = document.getElementById('api-endpoint');
+            if (endpointElement) {
+                endpointElement.textContent = API_BASE_URL;
+            }
         }
         
-        // Check if API is reachable
+        // Check if API is reachable - with better error handling
         async function checkApiStatus() {
             const statusDot = document.getElementById('status-dot');
             const statusText = document.getElementById('api-status-text');
             
+            if (!statusDot || !statusText) {
+                console.error('API status elements not found');
+                return;
+            }
+            
+            // Set initial state to "checking"
+            statusDot.className = 'status-dot checking';
+            statusText.textContent = 'Checking API...';
+            
             try {
-                const response = await fetch(`${API_BASE_URL}/health`, {
-                    signal: AbortSignal.timeout(5000)
+                console.log('Testing API connection to:', API_BASE_URL + '/health');
+                const response = await fetch(API_BASE_URL + '/health', {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    },
+                    signal: AbortSignal.timeout(8000) // 8 second timeout
                 });
                 
+                console.log('API response status:', response.status);
+                
                 if (response.ok) {
-                    apiStatus = 'connected';
+                    const data = await response.json().catch(() => ({}));
                     statusDot.className = 'status-dot';
-                    statusText.textContent = 'API Connected';
+                    statusText.textContent = data.status === 'ok' ? 'API Connected' : 'API Ready';
+                    console.log('API check successful');
                 } else {
-                    throw new Error('API not responding');
+                    throw new Error(`HTTP ${response.status}`);
                 }
             } catch (error) {
-                apiStatus = 'disconnected';
-                statusDot.className = 'status-dot disconnected';
-                statusText.textContent = 'API Disconnected';
                 console.warn('API check failed:', error);
+                
+                // Don't show error if it's just a timeout or network issue
+                if (error.name === 'AbortError' || error.name === 'TimeoutError') {
+                    statusDot.className = 'status-dot disconnected';
+                    statusText.textContent = 'API Timeout';
+                } else if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+                    statusDot.className = 'status-dot disconnected';
+                    statusText.textContent = 'Network Error';
+                } else {
+                    statusDot.className = 'status-dot disconnected';
+                    statusText.textContent = 'API Disconnected';
+                }
+                
+                // Don't show error card for initial API check - it's not a user error
             }
         }
         
         // Fetch website source
         async function fetchSource() {
-            const url = document.getElementById('url-input').value.trim();
-            const executeJS = document.getElementById('execute-js').checked;
-            const captureConsole = document.getElementById('capture-console').checked;
+            const urlInput = document.getElementById('url-input');
+            if (!urlInput) {
+                showError('URL input not found');
+                return;
+            }
+            
+            const url = urlInput.value.trim();
+            const executeJS = document.getElementById('execute-js')?.checked || false;
             
             if (!url) {
                 showError('Please enter a URL');
@@ -916,20 +957,31 @@
                 return;
             }
             
-            // Show loading
-            document.getElementById('loading').style.display = 'block';
-            document.getElementById('results').style.display = 'none';
-            document.getElementById('error-card').style.display = 'none';
+            // Validate URL format
+            try {
+                new URL(url);
+            } catch (e) {
+                showError('Invalid URL format. Please check and try again.');
+                return;
+            }
+            
+            // Show loading state
+            const loadingElement = document.getElementById('loading');
+            const resultsElement = document.getElementById('results');
+            const errorCard = document.getElementById('error-card');
+            
+            if (loadingElement) loadingElement.style.display = 'block';
+            if (resultsElement) resultsElement.style.display = 'none';
+            if (errorCard) errorCard.style.display = 'none';
             
             // Show JS execution status if enabled
             const jsStatus = document.getElementById('js-status');
             const jsResults = document.getElementById('js-results');
             
-            if (executeJS) {
+            if (executeJS && jsStatus) {
                 jsStatus.style.display = 'flex';
-                jsResults.style.display = 'none';
-            } else {
-                jsStatus.style.display = 'none';
+            }
+            if (jsResults) {
                 jsResults.style.display = 'none';
             }
             
@@ -940,26 +992,41 @@
                 });
                 
                 const apiUrl = `${API_BASE_URL}/api/fetch?${params}`;
-                console.log('Fetching from:', apiUrl);
+                console.log('Fetching from API:', apiUrl);
                 
                 const response = await fetch(apiUrl, {
                     signal: AbortSignal.timeout(30000)
                 });
                 
-                const data = await response.json();
+                console.log('Response status:', response.status);
                 
                 if (!response.ok) {
-                    throw new Error(data.error || `HTTP ${response.status}`);
+                    let errorMessage = `HTTP ${response.status}`;
+                    try {
+                        const errorData = await response.json();
+                        errorMessage = errorData.error || errorMessage;
+                    } catch (e) {
+                        // If response is not JSON, get text
+                        const text = await response.text();
+                        if (text) errorMessage = text.substring(0, 200);
+                    }
+                    throw new Error(errorMessage);
+                }
+                
+                const data = await response.json();
+                console.log('API response received successfully');
+                
+                if (data.error) {
+                    throw new Error(data.error);
                 }
                 
                 currentData = data;
                 consoleLogs = data.javascript?.consoleLogs || [];
                 
                 // Update JS execution results
-                if (executeJS) {
+                if (executeJS && jsStatus && jsResults) {
                     jsStatus.style.display = 'none';
                     jsResults.style.display = 'flex';
-                    jsResults.className = 'execution-status success';
                     
                     const logsCount = consoleLogs.length;
                     const errorsCount = data.javascript?.errors?.length || 0;
@@ -968,11 +1035,12 @@
                     if (logsCount > 0) resultText += `, ${logsCount} console logs`;
                     if (errorsCount > 0) resultText += `, ${errorsCount} errors`;
                     
-                    jsResults.innerHTML = `<span class="material-icons">check_circle</span> <span>${resultText}</span>`;
-                    
                     if (errorsCount > 0) {
                         jsResults.className = 'execution-status error';
                         jsResults.innerHTML = `<span class="material-icons">error</span> <span>${errorsCount} execution errors</span>`;
+                    } else {
+                        jsResults.className = 'execution-status success';
+                        jsResults.innerHTML = `<span class="material-icons">check_circle</span> <span>${resultText}</span>`;
                     }
                 }
                 
@@ -980,21 +1048,31 @@
                 
             } catch (error) {
                 console.error('Fetch error:', error);
-                showError(error.message || 'Failed to fetch website source');
+                let errorMessage = error.message || 'Failed to fetch website source';
+                
+                // Improve error messages
+                if (error.name === 'AbortError' || error.name === 'TimeoutError') {
+                    errorMessage = 'Request timeout (30 seconds). The website might be too slow or blocking requests.';
+                } else if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+                    errorMessage = 'Network error. Please check your connection and try again.';
+                } else if (error.message.includes('CORS')) {
+                    errorMessage = 'CORS error. The website may block requests from different origins.';
+                }
+                
+                showError(errorMessage);
                 
                 // Hide JS status on error
-                document.getElementById('js-status').style.display = 'none';
-                document.getElementById('js-results').style.display = 'none';
+                if (jsStatus) jsStatus.style.display = 'none';
+                if (jsResults) jsResults.style.display = 'none';
             } finally {
-                document.getElementById('loading').style.display = 'none';
+                if (loadingElement) loadingElement.style.display = 'none';
             }
         }
         
         // Display results
         function displayResults(data) {
-            const formatHtml = document.getElementById('format-html').checked;
-            const highlight = document.getElementById('highlight-code')?.checked || true;
-            const showPreview = document.getElementById('show-preview').checked;
+            const formatHtml = document.getElementById('format-html')?.checked || false;
+            const showPreview = document.getElementById('show-preview')?.checked || false;
             
             // Display source code
             let source = data.source;
@@ -1003,36 +1081,54 @@
             }
             
             const sourceCode = document.getElementById('source-code');
-            sourceCode.textContent = source;
-            
-            if (highlight) {
-                hljs.highlightElement(sourceCode);
+            if (sourceCode) {
+                sourceCode.textContent = source;
+                
+                // Apply syntax highlighting if available
+                if (typeof hljs !== 'undefined') {
+                    setTimeout(() => {
+                        hljs.highlightElement(sourceCode);
+                    }, 100);
+                }
             }
             
             // Display headers
             const headersCode = document.getElementById('headers-code');
-            headersCode.textContent = JSON.stringify(data.headers || {}, null, 2);
-            if (highlight) {
-                hljs.highlightElement(headersCode);
+            if (headersCode) {
+                headersCode.textContent = JSON.stringify(data.headers || {}, null, 2);
+                if (typeof hljs !== 'undefined') {
+                    setTimeout(() => {
+                        hljs.highlightElement(headersCode);
+                    }, 100);
+                }
             }
             
             // Display preview if enabled
             if (showPreview && data.contentType && data.contentType.includes('text/html')) {
                 const previewFrame = document.getElementById('preview-frame');
-                const previewDoc = previewFrame.contentDocument || previewFrame.contentWindow.document;
-                previewDoc.open();
-                previewDoc.write(data.source);
-                previewDoc.close();
+                if (previewFrame) {
+                    try {
+                        const previewDoc = previewFrame.contentDocument || previewFrame.contentWindow.document;
+                        previewDoc.open();
+                        previewDoc.write(data.source);
+                        previewDoc.close();
+                    } catch (e) {
+                        console.warn('Could not load preview:', e);
+                    }
+                }
             }
             
             // Update tabs visibility
             const consoleTab = document.querySelector('.tab[onclick*="console"]');
             const previewTab = document.querySelector('.tab[onclick*="preview"]');
             
-            consoleTab.style.display = 
-                data.javascript?.executed && consoleLogs.length > 0 ? 'flex' : 'none';
-            previewTab.style.display = 
-                showPreview && data.contentType && data.contentType.includes('text/html') ? 'flex' : 'none';
+            if (consoleTab) {
+                consoleTab.style.display = data.javascript?.executed && consoleLogs.length > 0 ? 'flex' : 'none';
+            }
+            
+            if (previewTab) {
+                previewTab.style.display = showPreview && data.contentType && data.contentType.includes('text/html') ? 'flex' : 'none';
+            }
             
             // Render console logs
             if (data.javascript?.executed) {
@@ -1043,13 +1139,19 @@
             updateStats(data);
             
             // Show results
-            document.getElementById('results').style.display = 'block';
+            const resultsElement = document.getElementById('results');
+            if (resultsElement) {
+                resultsElement.style.display = 'block';
+            }
         }
         
         // Render console logs
         function renderConsoleLogs() {
             const consoleContent = document.getElementById('console-content');
-            const searchTerm = document.getElementById('console-search').value.toLowerCase();
+            const searchInput = document.getElementById('console-search');
+            const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+            
+            if (!consoleContent) return;
             
             // Filter logs
             const filteredLogs = consoleLogs.filter(log => {
@@ -1115,7 +1217,9 @@
             
             // Auto-scroll to bottom
             if (autoScroll) {
-                consoleContent.scrollTop = consoleContent.scrollHeight;
+                setTimeout(() => {
+                    consoleContent.scrollTop = consoleContent.scrollHeight;
+                }, 100);
             }
         }
         
@@ -1152,10 +1256,15 @@
                 }
             });
             
-            document.getElementById('total-logs').textContent = counts.total;
-            document.getElementById('log-count').textContent = counts.log;
-            document.getElementById('warn-count').textContent = counts.warn;
-            document.getElementById('error-count').textContent = counts.error;
+            const totalLogsElement = document.getElementById('total-logs');
+            const logCountElement = document.getElementById('log-count');
+            const warnCountElement = document.getElementById('warn-count');
+            const errorCountElement = document.getElementById('error-count');
+            
+            if (totalLogsElement) totalLogsElement.textContent = counts.total;
+            if (logCountElement) logCountElement.textContent = counts.log;
+            if (warnCountElement) warnCountElement.textContent = counts.warn;
+            if (errorCountElement) errorCountElement.textContent = counts.error;
         }
         
         // Filter console based on search
@@ -1194,63 +1303,74 @@
         function toggleAutoScroll() {
             autoScroll = !autoScroll;
             const button = document.querySelector('.console-control-btn[onclick*="toggleAutoScroll"]');
-            button.innerHTML = autoScroll ? 
-                '<span class="material-icons">scrollable</span> Auto-scroll (ON)' :
-                '<span class="material-icons">scrollable</span> Auto-scroll (OFF)';
+            if (button) {
+                button.innerHTML = autoScroll ? 
+                    '<span class="material-icons">scrollable</span> Auto-scroll (ON)' :
+                    '<span class="material-icons">scrollable</span> Auto-scroll (OFF)';
+            }
             
             if (autoScroll) {
                 const consoleContent = document.getElementById('console-content');
-                consoleContent.scrollTop = consoleContent.scrollHeight;
+                if (consoleContent) {
+                    consoleContent.scrollTop = consoleContent.scrollHeight;
+                }
             }
         }
         
         // Format HTML for readability
         function formatHTML(html) {
-            let formatted = '';
-            let indent = 0;
-            const tab = '  ';
-            
-            html.split(/>\s*</).forEach(element => {
-                if (element.match(/^\/\w/)) {
-                    indent = Math.max(0, indent - 1);
-                }
+            try {
+                let formatted = '';
+                let indent = 0;
+                const tab = '  ';
                 
-                formatted += tab.repeat(indent) + '<' + element + '>\n';
+                html.split(/>\s*</).forEach(element => {
+                    if (element.match(/^\/\w/)) {
+                        indent = Math.max(0, indent - 1);
+                    }
+                    
+                    formatted += tab.repeat(indent) + '<' + element + '>\n';
+                    
+                    if (element.match(/^<?\w[^>]*[^\/]$/) && !element.startsWith('!--')) {
+                        indent++;
+                    }
+                });
                 
-                if (element.match(/^<?\w[^>]*[^\/]$/) && !element.startsWith('!--')) {
-                    indent++;
-                }
-            });
-            
-            return formatted.trim();
+                return formatted.trim();
+            } catch (e) {
+                console.warn('HTML formatting failed:', e);
+                return html;
+            }
         }
         
         // Update statistics
         function updateStats(data) {
             // Quick stats
             const quickStats = document.getElementById('quick-stats');
-            quickStats.innerHTML = `
-                <div class="stat-card">
-                    <h3><span class="material-icons">storage</span> Page Size</h3>
-                    <div class="stat-value">${(data.sizeBytes / 1024).toFixed(2)} KB</div>
-                </div>
-                <div class="stat-card">
-                    <h3><span class="material-icons">http</span> Status Code</h3>
-                    <div class="stat-value">${data.status}</div>
-                </div>
-                <div class="stat-card">
-                    <h3><span class="material-icons">description</span> Content Type</h3>
-                    <div class="stat-value">${data.contentType?.split(';')[0] || 'Unknown'}</div>
-                </div>
-                <div class="stat-card">
-                    <h3><span class="material-icons">javascript</span> JavaScript</h3>
-                    <div class="stat-value">${data.javascript?.executed ? 'Executed' : 'Not Executed'}</div>
-                </div>
-            `;
+            if (quickStats) {
+                quickStats.innerHTML = `
+                    <div class="stat-card">
+                        <h3><span class="material-icons">storage</span> Page Size</h3>
+                        <div class="stat-value">${(data.sizeBytes / 1024).toFixed(2)} KB</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3><span class="material-icons">http</span> Status Code</h3>
+                        <div class="stat-value">${data.status}</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3><span class="material-icons">description</span> Content Type</h3>
+                        <div class="stat-value">${data.contentType?.split(';')[0] || 'Unknown'}</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3><span class="material-icons">javascript</span> JavaScript</h3>
+                        <div class="stat-value">${data.javascript?.executed ? 'Executed' : 'Not Executed'}</div>
+                    </div>
+                `;
+            }
             
             // Page info stats
             const pageStats = document.getElementById('page-stats');
-            if (data.pageInfo) {
+            if (pageStats && data.pageInfo) {
                 pageStats.innerHTML = `
                     <div class="stat-card">
                         <h3><span class="material-icons">title</span> Page Title</h3>
@@ -1276,6 +1396,8 @@
         
         // Tab switching
         function switchTab(tabName) {
+            if (!event || !event.target) return;
+            
             // Update tab buttons
             document.querySelectorAll('.tab').forEach(tab => {
                 tab.classList.remove('active');
@@ -1286,11 +1408,19 @@
             document.querySelectorAll('.tab-content').forEach(content => {
                 content.classList.remove('active');
             });
-            document.getElementById(`tab-${tabName}`).classList.add('active');
+            const tabElement = document.getElementById(`tab-${tabName}`);
+            if (tabElement) {
+                tabElement.classList.add('active');
+            }
         }
         
         // Copy source to clipboard
         async function copySource() {
+            if (!currentData || !currentData.source) {
+                showError('No source code to copy');
+                return;
+            }
+            
             try {
                 await navigator.clipboard.writeText(currentData.source);
                 alert('Source code copied to clipboard!');
@@ -1301,32 +1431,55 @@
         
         // Download source as file
         function downloadSource() {
-            if (!currentData) return;
+            if (!currentData) {
+                showError('No data to download');
+                return;
+            }
             
-            const url = new URL(currentData.url);
-            const filename = `${url.hostname}-${new Date().toISOString().slice(0,10)}.html`;
-            const blob = new Blob([currentData.source], { type: 'text/html' });
-            const downloadUrl = URL.createObjectURL(blob);
-            
-            const a = document.createElement('a');
-            a.href = downloadUrl;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(downloadUrl);
+            try {
+                const url = new URL(currentData.url);
+                const filename = `${url.hostname}-${new Date().toISOString().slice(0,10)}.html`;
+                const blob = new Blob([currentData.source], { type: 'text/html' });
+                const downloadUrl = URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = downloadUrl;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(downloadUrl);
+            } catch (error) {
+                showError('Failed to download: ' + error.message);
+            }
         }
         
         // Toggle word wrap
         function toggleWrap() {
-            const pre = document.querySelector('#source-code').parentElement;
-            pre.style.whiteSpace = pre.style.whiteSpace === 'pre-wrap' ? 'pre' : 'pre-wrap';
+            const sourceCode = document.getElementById('source-code');
+            if (!sourceCode) return;
+            
+            const pre = sourceCode.parentElement;
+            if (pre) {
+                pre.style.whiteSpace = pre.style.whiteSpace === 'pre-wrap' ? 'pre' : 'pre-wrap';
+            }
         }
         
-        // Show error
+        // Show error - only for user errors, not for initial API check
         function showError(message) {
-            document.getElementById('error-message').textContent = message;
-            document.getElementById('error-card').style.display = 'block';
+            console.error('Showing error:', message);
+            
+            const errorMessageElement = document.getElementById('error-message');
+            const errorCard = document.getElementById('error-card');
+            
+            if (errorMessageElement) errorMessageElement.textContent = message;
+            if (errorCard) {
+                errorCard.style.display = 'block';
+                // Scroll error into view
+                setTimeout(() => {
+                    errorCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }, 100);
+            }
         }
     </script>
 </body>
