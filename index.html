@@ -3,22 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Website Source Fetcher with Console</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css">
-    <link rel="stylesheet" href="styles.css">
+    <title>Website Source Fetcher</title>
+    <!-- Google Fonts & Icons -->
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Highlight.js -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="styles.css">
     <style>
-        /* Minimal inline styles for immediate rendering */
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #f8f9fa;
+        /* Immediate loading styles */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #f8f9fa; 
             min-height: 100vh;
         }
-        
-        .initial-loader {
+        #initial-loading {
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -26,8 +27,7 @@
             min-height: 100vh;
             color: #5f6368;
         }
-        
-        .initial-loader .spinner {
+        #initial-loading .spinner {
             border: 3px solid rgba(26, 115, 232, 0.1);
             border-radius: 50%;
             border-top: 3px solid #1a73e8;
@@ -36,7 +36,6 @@
             animation: spin 1s linear infinite;
             margin-bottom: 16px;
         }
-        
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
@@ -44,15 +43,22 @@
     </style>
 </head>
 <body>
-    <div class="initial-loader" id="initial-loading">
+    <!-- Initial loader -->
+    <div id="initial-loading">
         <div class="spinner"></div>
         <p>Loading application...</p>
     </div>
 
+    <!-- Main app (hidden initially) -->
     <div class="container" id="app-container" style="display: none;">
         <header>
-            <h1><span class="material-icons">code</span> Website Source Fetcher with Console</h1>
-            <p class="subtitle">Fetch HTML, execute JavaScript, and view console output</p>
+            <div class="header-content">
+                <h1>
+                    <span class="material-icons">code</span>
+                    Website Source Fetcher
+                </h1>
+                <p class="subtitle">Fetch HTML, execute JavaScript, and view console output</p>
+            </div>
             <div class="api-status">
                 <span class="status-dot" id="status-dot"></span>
                 <span id="api-status-text">Checking API...</span>
@@ -60,6 +66,7 @@
         </header>
 
         <main>
+            <!-- Input Section -->
             <div class="input-section">
                 <div class="url-input-group">
                     <input 
@@ -71,7 +78,8 @@
                         spellcheck="false"
                     >
                     <button onclick="fetchSource()" class="btn btn-primary">
-                        <span class="material-icons">search</span> Fetch Source
+                        <span class="material-icons">search</span>
+                        Fetch Source
                     </button>
                 </div>
                 
@@ -96,31 +104,51 @@
                 
                 <div class="js-execution-controls">
                     <div id="js-status" class="execution-status" style="display: none;">
-                        <span class="pulse">●</span>
+                        <span class="material-icons pulse">sync</span>
                         <span>Executing JavaScript...</span>
                     </div>
                     <div id="js-results" class="execution-status" style="display: none;"></div>
                 </div>
             </div>
 
+            <!-- Error Display -->
             <div class="error-card" id="error-card">
                 <strong>Error:</strong> <span id="error-message"></span>
             </div>
 
+            <!-- Loading Indicator -->
             <div class="loading" id="loading">
                 <div class="spinner"></div>
                 <p>Fetching website source...</p>
             </div>
 
+            <!-- Results Section -->
             <div id="results" style="display: none;">
+                <!-- Tabs -->
                 <div class="tabs">
-                    <button class="tab active" onclick="switchTab('source')">Source Code</button>
-                    <button class="tab" onclick="switchTab('preview')">Preview</button>
-                    <button class="tab" onclick="switchTab('console')">Console</button>
-                    <button class="tab" onclick="switchTab('headers')">Headers</button>
-                    <button class="tab" onclick="switchTab('info')">Page Info</button>
+                    <button class="tab active" onclick="switchTab('source')">
+                        <span class="material-icons">code</span>
+                        Source Code
+                    </button>
+                    <button class="tab" onclick="switchTab('preview')">
+                        <span class="material-icons">preview</span>
+                        Preview
+                    </button>
+                    <button class="tab" onclick="switchTab('console')">
+                        <span class="material-icons">terminal</span>
+                        Console
+                    </button>
+                    <button class="tab" onclick="switchTab('headers')">
+                        <span class="material-icons">list</span>
+                        Headers
+                    </button>
+                    <button class="tab" onclick="switchTab('info')">
+                        <span class="material-icons">info</span>
+                        Page Info
+                    </button>
                 </div>
 
+                <!-- Source Code Tab -->
                 <div id="tab-source" class="tab-content active">
                     <div class="code-container">
                         <div class="code-header">
@@ -141,12 +169,14 @@
                     </div>
                 </div>
 
+                <!-- Preview Tab -->
                 <div id="tab-preview" class="tab-content">
                     <div class="preview-container">
                         <iframe id="preview-frame" sandbox="allow-same-origin"></iframe>
                     </div>
                 </div>
 
+                <!-- Console Tab -->
                 <div id="tab-console" class="tab-content">
                     <div class="console-container">
                         <div class="console-header">
@@ -187,34 +217,42 @@
                     </div>
                 </div>
 
+                <!-- Headers Tab -->
                 <div id="tab-headers" class="tab-content">
                     <div class="code-container">
                         <pre><code class="language-json" id="headers-code"></code></pre>
                     </div>
                 </div>
 
+                <!-- Info Tab -->
                 <div id="tab-info" class="tab-content">
                     <div class="stats-grid" id="page-stats"></div>
                 </div>
 
+                <!-- Quick Stats -->
                 <div class="stats-grid" id="quick-stats"></div>
             </div>
         </main>
 
         <footer>
             <p>
-                API: <span id="api-endpoint">https://source.ikunbeautiful.workers.dev</span>
+                API: <span id="api-endpoint">https://source.ikunbeautiful.workers.dev</span> |
+                Frontend hosted on <a href="https://pages.github.com" target="_blank">GitHub Pages</a> |
+                <a href="https://github.com/YOUR_USERNAME/website-source-fetcher" target="_blank">View on GitHub</a>
             </p>
         </footer>
     </div>
 
-    <!-- Load scripts at the end of body -->
+    <!-- External Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
     <script src="app.js"></script>
     
+    <!-- Initialize App -->
     <script>
-        // Simple loader to show app when resources are ready
+        // Wait for everything to load
         window.addEventListener('load', function() {
+            console.log('Page loaded, initializing app...');
+            
             // Hide initial loader
             const initialLoading = document.getElementById('initial-loading');
             if (initialLoading) {
@@ -225,25 +263,40 @@
             const appContainer = document.getElementById('app-container');
             if (appContainer) {
                 appContainer.style.display = 'block';
+                console.log('App container shown');
             }
             
-            // Initialize app if the functions exist
+            // Initialize app
             if (typeof initApp === 'function') {
+                console.log('Calling initApp()');
                 initApp();
             } else {
-                console.error('initApp function not found');
+                console.error('initApp function not found in app.js');
+                // Try to initialize anyway
+                setTimeout(function() {
+                    if (typeof updateApiEndpoint === 'function') updateApiEndpoint();
+                    if (typeof checkApiStatus === 'function') checkApiStatus();
+                    if (typeof initConsoleFilters === 'function') initConsoleFilters();
+                }, 100);
             }
         });
         
-        // Fallback in case initApp is not loaded
+        // Fallback error display
         setTimeout(function() {
             const initialLoading = document.getElementById('initial-loading');
-            const appContainer = document.getElementById('app-container');
-            
-            if (initialLoading && appContainer && appContainer.style.display === 'none') {
-                initialLoading.innerHTML = '<p style="color: #d93025;">Error loading application. Please refresh.</p>';
+            if (initialLoading && initialLoading.style.display !== 'none') {
+                initialLoading.innerHTML = `
+                    <div style="text-align: center; padding: 20px;">
+                        <span class="material-icons" style="font-size: 48px; color: #d93025;">error</span>
+                        <p style="margin-top: 16px; color: #d93025;">Failed to load application</p>
+                        <p style="margin-top: 8px; font-size: 14px;">Check browser console for errors</p>
+                        <button onclick="location.reload()" style="margin-top: 16px; padding: 8px 16px; background: #1a73e8; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                            Retry
+                        </button>
+                    </div>
+                `;
             }
-        }, 5000);
+        }, 10000);
     </script>
 </body>
 </html>
