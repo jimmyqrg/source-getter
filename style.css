@@ -1,4 +1,4 @@
-/* Modern, standard design with Google Material Icons */
+/* Modern Material Design */
 :root {
     --primary: #1a73e8;
     --primary-dark: #0d62c9;
@@ -61,12 +61,14 @@ header {
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
+    flex-wrap: wrap;
 }
 
 .header-content {
     display: flex;
-    align-items: center;
-    gap: 1rem;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.5rem;
 }
 
 header h1 {
@@ -86,7 +88,7 @@ header h1 .material-icons {
 .subtitle {
     color: var(--gray-600);
     font-size: 0.875rem;
-    margin-left: 0.25rem;
+    margin-left: 2.75rem;
 }
 
 .api-status {
@@ -98,6 +100,7 @@ header h1 .material-icons {
     border-radius: var(--radius-lg);
     font-size: 0.875rem;
     color: var(--gray-700);
+    white-space: nowrap;
 }
 
 .status-dot {
@@ -165,7 +168,6 @@ main {
     gap: 0.5rem;
     transition: all 0.2s;
     font-family: 'Inter', sans-serif;
-    text-transform: none;
 }
 
 .btn-primary {
@@ -185,11 +187,6 @@ main {
 
 .btn-secondary:hover {
     background: var(--gray-200);
-}
-
-.btn-small {
-    padding: 0.5rem 0.75rem;
-    font-size: 0.875rem;
 }
 
 .material-icons {
@@ -246,6 +243,7 @@ main {
     gap: 0.25rem;
     margin-bottom: 1.5rem;
     border-bottom: 1px solid var(--border);
+    overflow-x: auto;
 }
 
 .tab {
@@ -262,6 +260,7 @@ main {
     align-items: center;
     gap: 0.5rem;
     border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+    white-space: nowrap;
 }
 
 .tab:hover {
@@ -697,9 +696,11 @@ footer a:hover {
     }
     
     .header-content {
-        flex-direction: column;
         align-items: flex-start;
-        gap: 0.5rem;
+    }
+    
+    .subtitle {
+        margin-left: 0;
     }
     
     .url-input-group {
@@ -707,14 +708,13 @@ footer a:hover {
     }
     
     .tabs {
-        overflow-x: auto;
-        white-space: nowrap;
         padding-bottom: 0.25rem;
     }
     
     .preview-container,
     .code-container pre {
         max-height: 400px;
+        height: 400px;
     }
     
     .console-container {
